@@ -1,6 +1,5 @@
-
-
 import numpy as np
+from scipy.stats import norm
 
 def ch_label(label,label_str = ["'setosa'","'versicolor'","'virginica'"]):
     data_point = len(label)
@@ -20,11 +19,23 @@ def feature_normalization(data):
     feature_num = data.shape[1]
     data_point = data.shape[0]
     # you should get this parameter correctly
-    nomal_feature = np.zeros([data_point,feature_num])
+    normal_feature = np.zeros([data_point,feature_num])
     ## your code here
-            
+    feature_max = np.zeros(feature_num)
+    feature_min = np.zeros(feature_num)
+
+    for next_data in data:
+        for j, next_feature in enumerate(next_data):
+            if next_feature > feature_max[j]:
+                feature_max[j] = next_feature
+            if next_feature < feature_min[j]:
+                feature_min[j] = next_feature
+
+    for i, next_data in enumerate(data):
+        for j, next_feature in enumerate(next_data):
+            normal_feature[i, j] = (next_feature - feature_min[j]) / (feature_max[j] - feature_min[j])
     ## end
-    return nomal_feature
+    return normal_feature
         
 def spilt_data(data,label,spilt_factor):
     feature_num = data.shape[1]
@@ -46,10 +57,13 @@ def get_normal_parameter(train_data,train_label,lable_num):
     ## parameter
     feature_num = train_data.shape[1]
     ## you should get this parameter correctly    
-    mu = np.zeros([lable_num,feature_num])
-    sigma = np.zeros([lable_num,feature_num])
+    mu = np.zeros([lable_num,feature_num]) # mu : average
+    sigma = np.zeros([lable_num,feature_num]) # sigma : std. dev.
     ## your code here
-
+    for i in range(lable_num):
+        label_data = [x for j, x in enumerate(train_data) if train_label[j] == i]
+        mu[i] = np.mean(label_data, axis=0)
+        sigma[i] = np.std(label_data, axis=0)
     ## end
     return mu,sigma
 
@@ -59,11 +73,21 @@ def prob(mu,sigma,data,label):
     lable_num = mu.shape[0]
     ## you should get this parameter correctly   
     prob = np.zeros([data_point,lable_num])
-    pi = np.zeros([lable_num,1])
+    pi = np.zeros([lable_num,1]) #prior
     ## your code here
+    for i in range(lable_num):
+        pi[i] = len([x for x in label if x == i]) / len(label)
 
+    for i, next_data in enumerate(data):
+        for next_hypo in range(lable_num):
+            prob[i, next_hypo] = pi[next_hypo]
+            for j, next_feature in enumerate(next_data):
+                prob[i, next_hypo] *= norm(mu[next_hypo, j], sigma[next_hypo, j]).pdf(next_feature)
+        hypo_sum = np.sum(prob[i])
+        for next_hypo in range(lable_num):
+            prob[i, next_hypo] /= hypo_sum
     ## end
-    return prob,pi
+    return prob, pi
 
 def classifier(prob):
     ## parameter
@@ -71,6 +95,8 @@ def classifier(prob):
     ## you should get this parameter correctly 
     label = np.zeros([data_point])
     ## your code here
+    for i, _ in enumerate(label):
+        label[i] = np.argmax(prob[i])
 
     ## end
     return label
@@ -84,20 +110,5 @@ def acc(est,gnd):
         else:
             acc = acc;
     return (acc / total_num)*100, acc
-    
-    
-
-            
-            
-            
-            
-            
-            
-    
-    
-    
-    
-    
-    
     
     
